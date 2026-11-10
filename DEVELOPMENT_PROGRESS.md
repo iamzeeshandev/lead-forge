@@ -4,7 +4,7 @@ _Last updated: 2026-11-10_
 
 ## Current phase
 
-**Phase 2 — Client UI with mock data**, task 2.2 (data table, pagination, filters) is next
+**Phase 2 — Client UI with mock data**, task 2.3 (people search with the mock API) is next
 
 ## Phases
 
@@ -17,7 +17,7 @@ _Last updated: 2026-11-10_
   - [x] 1.4 Apollo access check: People Search `403` (not in the Free plan), company enrichment `200` (1 credit). Decision: hybrid integration ([docs/PLAN.md §7](docs/PLAN.md))
 - [ ] **Phase 2 — Client UI with mock data**
   - [x] 2.1 Design system: "Ledger" approved ([mockup](https://claude.ai/artifact/H3ZnTUJZUDNr4rBvvYAMVE)), tokens, restyled Button, top bar with nav and usage meter, `PageHeader`, `EmptyState`, `ErrorState`, error and 404 pages, empty first states for all four routes
-  - [ ] 2.2 `DataTable`, `Pagination`, search and filter inputs, `LoadingState`
+  - [x] 2.2 `DataTable` (TanStack Table v9, row selection, active row, skeleton loading), `Pagination` + `PerPageSelect`, `FilterRail`, `MultiValueInput`, `CheckboxGroup`, `SearchInput`; People page renders them with sample data; client unit tests (Vitest)
   - [ ] 2.3 People search page with mock data
   - [ ] 2.4 Saved leads and lead details
   - [ ] 2.5 Dashboard and companies
@@ -78,6 +78,14 @@ _Last updated: 2026-11-10_
 | `error.tsx` uses Next 16's `retry()` and treats `error` as `unknown` | `retry()` re-fetches as well as re-renders; client code can throw non-`Error` values |
 | No dark mode yet; shadcn's grey `.dark` palette removed | It wasn't part of the approved design; tokens make it addable later |
 | `LoadingState` moves to task 2.2 | Its skeleton should match the real table columns, so it's built with the `DataTable` |
+| TanStack Table **v9** (`useTable` + opt-in features), not v8 | Current major, and what shadcn's data-table guide uses |
+| Loading state lives inside `DataTable` (skeleton rows per column, `aria-busy`) | The skeleton always matches the real columns |
+| Row selection keyed by Apollo id (`getRowId`), select-all covers the current page only | Selection survives paging; the server paginates, so "all rows" means "this page" |
+| One documented `any` in `DataTableColumn` | TanStack types mixed column lists this way; each column keeps its own value type |
+| Column lists are assigned to a variable before returning | Returning directly let the `any` return type erase every column's value type (found by the build) |
+| `formatRange` returns `0` for a page past the last result | Apollo answers an out-of-range page with an empty list, not an error |
+| Vitest added to the client, explicit imports (no globals) | Pure logic such as `getPageItems` needs real tests; same runner as the server |
+| Multi-value inputs dedupe case-insensitively and commit on blur | "CTO" and "cto" are the same filter; typed text isn't lost when you click Search |
 
 ## Git
 
@@ -90,7 +98,8 @@ _Last updated: 2026-11-10_
 | `feature/server-setup` | Task 1.1 | Merged into `dev` (PR #1, `a0ad838`) |
 | `feature/client-setup` | Task 1.2 | Merged into `dev` (PR #2, `cce48ac`) |
 | `feature/database-setup` | Task 1.3 | Merged into `dev` (PR #3, `25d0f61`) |
-| `feature/client-design-system` | Task 2.1 (also carries the task 1.4 docs) | Ready to commit and open a PR into `dev` |
+| `feature/client-design-system` | Task 2.1 (also carries the task 1.4 docs) | Merged into `dev` (PR #4, `08c2256`) |
+| `feature/client-data-table` | Task 2.2 | Ready to commit and open a PR into `dev` |
 
 ### Commits and PRs
 
@@ -106,8 +115,11 @@ _Last updated: 2026-11-10_
 | 2026-11-10 | `dev` | `cce48ac` Merge PR #2 (client setup) |
 | 2026-11-10 | `feature/database-setup` | `b6fb21e` feat(db): add postgres with prisma and a database health check (code and docs in one commit) |
 | 2026-11-10 | `dev` | `25d0f61` Merge PR #3 (database setup) |
-| 2026-11-10 | `feature/client-design-system` | `feat(client): add ledger design system and app shell` |
-| 2026-11-10 | `feature/client-design-system` | `docs: record apollo access check and design system` |
+| 2026-11-10 | `feature/client-design-system` | `38535d6` feat(client): add ledger design system and app shell |
+| 2026-11-10 | `feature/client-design-system` | `7cdd6c5` docs: record apollo access check and design system |
+| 2026-11-10 | `dev` | `08c2256` Merge PR #4 (design system) |
+| 2026-11-10 | `feature/client-data-table` | `feat(client): add data table, pagination and filter components` |
+| 2026-11-10 | `feature/client-data-table` | `docs: update progress for data components` |
 
 ## Known issues and risks
 
@@ -119,10 +131,12 @@ _Last updated: 2026-11-10_
 - **ESLint 9** is in maintenance (10 is latest). Next 16.4's scaffold pins `^9`; upgrade once `eslint-config-next` supports 10.
 - `origin/main` is still 1 commit behind local `main` (`git push origin main`).
 
+- **shadcn CLI writes Mira defaults** (28px inputs, dark-mode classes). Every `shadcn add` needs restyling to Ledger tokens.
+- **Open UX decision for task 2.3:** should a new search clear the row selection? Selection currently survives searches as well as paging.
 - **Usage meter shows "—"** until Phase 4 passes Apollo's rate-limit headers to the client. The mockup's "credits left" figure is left out until we confirm an endpoint the scoped key can read it from.
 - **Prisma 8** is in release candidate, and the default Prisma docs already describe it. Use the v7 docs (`prisma.io/docs/orm/v7`, `/guides/v7`) until we decide to upgrade.
 
 ## Next step
 
-1. Commit `feature/client-design-system`, push it, open a PR into `dev` and merge.
-2. Task 2.2: `DataTable` (TanStack Table), `Pagination`, search and filter inputs, `LoadingState`.
+1. Commit `feature/client-data-table`, push it, open a PR into `dev` and merge.
+2. Task 2.3 (🤝): design the people-search API contract together (request filters, `ProspectPerson`, pagination meta), then the mock API, filters in the URL, TanStack Query and the prospect side sheet.
