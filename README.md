@@ -59,7 +59,20 @@ The server validates its environment variables at startup and refuses to start i
 
 ### Client
 
-Added in task 1.2.
+```bash
+cd client
+npm install
+npm run dev            # http://localhost:3000
+```
+
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Dev server (Turbopack) |
+| `npm run build` | Production build with type check |
+| `npm run lint` | Lint with ESLint (Next.js rules) |
+| `npm run format` | Format with Prettier (also sorts Tailwind classes) |
+
+UI components come from [shadcn/ui](https://ui.shadcn.com/) on Base UI primitives. Add one with `npx shadcn@latest add <component>`, then run `npm run format`.
 
 ## Git workflow
 
