@@ -1,6 +1,6 @@
 import { ApiError } from '@/lib/api-error';
 
-export interface SearchErrorView {
+export interface ApiErrorView {
   eyebrow: string;
   title: string;
   description: string;
@@ -13,7 +13,7 @@ function minutesLabel(seconds: number): string {
   return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
 }
 
-export function describeSearchError(error: unknown): SearchErrorView {
+export function describeApiError(error: unknown): ApiErrorView {
   if (!(error instanceof ApiError)) {
     // fetch() rejects without a response when the server is down or unreachable.
     return {
@@ -34,8 +34,8 @@ export function describeSearchError(error: unknown): SearchErrorView {
         eyebrow: '429 · Rate limited',
         title: "Apollo's hourly limit is used up",
         description: error.retryAfterSeconds
-          ? `Search works again in ${minutesLabel(error.retryAfterSeconds)}.`
-          : 'Wait a few minutes, then search again.',
+          ? `Apollo accepts requests again in ${minutesLabel(error.retryAfterSeconds)}.`
+          : 'Wait a few minutes, then try again.',
         detail,
         canRetry: false,
       };
@@ -60,7 +60,7 @@ export function describeSearchError(error: unknown): SearchErrorView {
     case 'VALIDATION_FAILED':
       return {
         eyebrow: `${error.status} · Invalid search`,
-        title: "These filters can't be searched",
+        title: "This request can't be processed",
         description: error.message,
         detail,
         canRetry: false,
@@ -68,8 +68,8 @@ export function describeSearchError(error: unknown): SearchErrorView {
     default:
       return {
         eyebrow: `${error.status} · Search failed`,
-        title: "The search didn't complete",
-        description: 'Something went wrong while searching. Try again.',
+        title: "The request didn't complete",
+        description: 'Something went wrong on the server. Try again.',
         detail,
         canRetry: true,
       };

@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { PageHeader } from '@/components/layout/page-header';
 import { Button } from '@/components/ui/button';
+import { describeApiError } from '@/lib/describe-api-error';
 import { formatRange } from '@/lib/pagination';
 import type { PaginationMeta } from '@/types/api';
 import {
@@ -23,7 +24,6 @@ import { FilterForm } from './filter-form';
 import { personLabel } from './format';
 import { createPeopleColumns } from './people-columns';
 import { ProspectSheet } from './prospect-sheet';
-import { describeSearchError } from './search-error';
 import {
   filtersKey,
   hasSearched,
@@ -197,7 +197,7 @@ export function PeopleSearchView() {
       />
     );
   } else if (search.isError) {
-    const error = describeSearchError(search.error);
+    const error = describeApiError(search.error);
     results = (
       <ErrorState
         eyebrow={error.eyebrow}

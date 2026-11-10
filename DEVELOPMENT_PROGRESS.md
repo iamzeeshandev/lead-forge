@@ -4,7 +4,7 @@ _Last updated: 2026-11-10_
 
 ## Current phase
 
-**Phase 2 — Client UI with mock data**, task 2.5 (dashboard and companies) is next
+**Phase 2 complete.** Next: release v0.1.0 (`dev` → `main`), then **Phase 3 — Apollo integration fundamentals**
 
 ## Phases
 
@@ -15,12 +15,12 @@ _Last updated: 2026-11-10_
   - [x] 1.2 Client setup (Next.js 16, Tailwind 4, shadcn/ui on Base UI, IBM Plex fonts, Prettier on :3000)
   - [x] 1.3 Database setup (Docker Compose Postgres 18, Prisma 7.10.1 with the pg adapter, database status in health check)
   - [x] 1.4 Apollo access check: People Search `403` (not in the Free plan), company enrichment `200` (1 credit). Decision: hybrid integration ([docs/PLAN.md §7](docs/PLAN.md))
-- [ ] **Phase 2 — Client UI with mock data**
+- [x] **Phase 2 — Client UI with mock data**
   - [x] 2.1 Design system: "Ledger" approved ([mockup](https://claude.ai/artifact/H3ZnTUJZUDNr4rBvvYAMVE)), tokens, restyled Button, top bar with nav and usage meter, `PageHeader`, `EmptyState`, `ErrorState`, error and 404 pages, empty first states for all four routes
   - [x] 2.2 `DataTable` (TanStack Table v9, row selection, active row, skeleton loading), `Pagination` + `PerPageSelect`, `FilterRail`, `MultiValueInput`, `CheckboxGroup`, `SearchInput`; People page renders them with sample data; client unit tests (Vitest)
   - [x] 2.3 People search: API contract (`ProspectPerson`, `PeopleSearchParams`, `Paginated<T>`, error codes), filters in the URL, mock API with error triggers, TanStack Query, empty/loading/error/past-last-page states, prospect side panel
   - [x] 2.4 Saved leads (search as you type, status filter, pagination) and lead details (status, notes, delete with confirmation) on a mock leads API; saving from People search imports with duplicate skipping
-  - [ ] 2.5 Dashboard and companies
+  - [x] 2.5 Dashboard (key figures, status and enrichment breakdowns, top companies, recent saves) and Companies (lookup by domain, companies behind saved leads)
 - [ ] **Phase 3 — Apollo integration fundamentals**
 - [ ] **Phase 4 — Client ↔ server (live people search)**
 - [ ] **Phase 5 — Database & lead management**
@@ -110,6 +110,13 @@ _Last updated: 2026-11-10_
 | Status and notes use separate mutations on the details page | Saving notes doesn't lock the status picker, and each shows its own error |
 | `ConfirmDialog` stays open until the action succeeds; focus starts on Cancel | A failed delete shows its error; Enter can't delete by accident |
 | `shadcn add` of a component that depends on `button` must answer "no" to overwriting | `--yes` doesn't answer that prompt; overwriting would drop the Ledger button |
+| `CompanyProfile` contract shaped after the real Apollo enrichment response | Revenue as a number (not "150M"), technologies de-duplicated: the quirks seen in task 1.4 |
+| Domains normalised with the `URL` parser before lookup | URLs, emails, `www.`, ports and international names all reduce to one domain; two spellings would cost two credits |
+| Company lookups cached by normalised domain for an hour | Looking the same company up again reuses the result instead of spending a credit |
+| Dashboard summary and company groups keyed under `['leads']` | Saves and deletes refresh them automatically |
+| Lead updates also invalidate the dashboard summary | Found in the browser: a status change didn't reach the dashboard because only lists were invalidated |
+| "Email available" (search flag) shown separately from "revealed" (known address) | Before enrichment, availability is all the free search gives |
+| Error mapping moved to `lib/describe-api-error.ts` with provider-neutral wording | People search and company lookup show the same Apollo errors |
 
 ## Git
 
@@ -125,7 +132,8 @@ _Last updated: 2026-11-10_
 | `feature/client-design-system` | Task 2.1 (also carries the task 1.4 docs) | Merged into `dev` (PR #4, `08c2256`) |
 | `feature/client-data-table` | Task 2.2 | Merged into `dev` (PR #5, `46d401d`) |
 | `feature/client-people-search` | Task 2.3 | Merged into `dev` (PR #6, `97666e9`); its docs ride along with task 2.4 |
-| `feature/client-saved-leads` | Task 2.4 | Ready to commit and open a PR into `dev` |
+| `feature/client-saved-leads` | Task 2.4 | Merged into `dev` (PR #7, `4f3bddb`) |
+| `feature/client-dashboard-companies` | Task 2.5 | Ready to commit and open a PR into `dev` |
 
 ### Commits and PRs
 
@@ -148,8 +156,10 @@ _Last updated: 2026-11-10_
 | 2026-11-10 | `dev` | `46d401d` Merge PR #5 (data components) |
 | 2026-11-10 | `feature/client-people-search` | `15d8c8a` feat(client): add people search with url state and mock api |
 | 2026-11-10 | `dev` | `97666e9` Merge PR #6 (people search) |
-| 2026-11-10 | `feature/client-saved-leads` | `feat(client): add saved leads and lead details` |
-| 2026-11-10 | `feature/client-saved-leads` | `docs: update progress for people search and saved leads` |
+| 2026-11-10 | `feature/client-saved-leads` | `8d7db9e` feat(client): add saved leads and lead details (code and docs in one commit) |
+| 2026-11-10 | `dev` | `4f3bddb` Merge PR #7 (saved leads) |
+| 2026-11-10 | `feature/client-dashboard-companies` | `feat(client): add dashboard and company lookup` |
+| 2026-11-10 | `feature/client-dashboard-companies` | `docs: complete phase 2 progress` |
 
 ## Known issues and risks
 
@@ -169,5 +179,6 @@ _Last updated: 2026-11-10_
 
 ## Next step
 
-1. Commit `feature/client-saved-leads`, push it, open a PR into `dev` and merge.
-2. Task 2.5: dashboard (stat strip and distributions from the mock leads) and the companies page, then release v0.1.0 to `main`.
+1. Commit `feature/client-dashboard-companies`, push it, open a PR into `dev` and merge.
+2. Release v0.1.0: PR `dev` → `main` (merge commit), then tag `v0.1.0` on `main`.
+3. Phase 3 (🧑🤝): Apollo integration fundamentals. First the doc-reading worksheet and raw calls (lab steps 3.A–3.B in [docs/PLAN.md](docs/PLAN.md)), and choosing the fake Apollo tool.

@@ -91,6 +91,8 @@ Until the client calls the server (Phase 4), People search runs on a mock API (`
 
 Saved leads use a mock too (`src/mocks/leads-api.ts`), stored in the browser's `localStorage` under `leadforge:mock-leads`. Remove that key to start with no saved leads.
 
+The company lookup mock (`src/mocks/companies-api.ts`) knows `apollo.io` (from a real Apollo response) and `corvid-analytics.example`. Any other domain is "not found", and `rate-limit.example` returns a 429.
+
 Design tokens (colors, type scale, radius) live in `src/app/globals.css`. For a link that looks like a button, use `<Link className={buttonVariants()}>` rather than `<Button render={<Link />}>`, which would announce it as a button.
 
 ## Git workflow
