@@ -36,16 +36,25 @@ Requirements:
 - Docker Desktop (for PostgreSQL)
 - An Apollo.io API key (kept in `server/.env`, never committed)
 
+### Database
+
+```bash
+docker compose up -d --wait   # PostgreSQL 18 on 127.0.0.1:5434
+```
+
+- Host port 5434 avoids clashes with other local Postgres containers. Set `POSTGRES_PORT` to use a different one, and update `DATABASE_URL` to match.
+- Data lives in the `leadforge_postgres-data` volume. `docker compose down` keeps it; `docker compose down -v` deletes it.
+
 ### Server
 
 ```bash
 cd server
-npm install
+npm install            # also generates the Prisma client
 cp .env.example .env   # adjust values if needed
 npm run start:dev      # http://localhost:4000/api
 ```
 
-Check that it runs: `curl http://localhost:4000/api/health`
+Check that it runs: `curl http://localhost:4000/api/health`. It returns `200` when the database is reachable and `503` when it isn't.
 
 The server validates its environment variables at startup and refuses to start if one is missing or invalid.
 
@@ -55,7 +64,10 @@ The server validates its environment variables at startup and refuses to start i
 | `npm run build` | Compile to `dist/` |
 | `npm run lint` | Lint with oxlint (type-aware) |
 | `npm test` | Unit tests (Vitest) |
-| `npm run test:e2e` | End-to-end tests (Vitest + Supertest) |
+| `npm run test:e2e` | End-to-end tests (Vitest + Supertest); needs the database running |
+| `npm run db:migrate` | Create and apply a migration after changing `prisma/schema.prisma` |
+| `npm run db:generate` | Regenerate the Prisma client |
+| `npm run db:studio` | Browse the database in Prisma Studio |
 
 ### Client
 
