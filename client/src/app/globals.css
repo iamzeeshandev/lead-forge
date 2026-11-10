@@ -1,0 +1,126 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Ledger type scale. It is one step smaller than Tailwind's default (text-sm
+ * is 13px). shadcn components are written against text-sm / text-xs, so
+ * shrinking the scale here makes every component dense at once.
+ */
+@theme {
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.8125rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base: 0.875rem;
+  --text-base--line-height: 1.375rem;
+  --text-lg: 0.9375rem;
+  --text-lg--line-height: 1.375rem;
+  --text-xl: 1.125rem;
+  --text-xl--line-height: 1.5rem;
+  --text-2xl: 1.25rem;
+  --text-2xl--line-height: 1.75rem;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1;
+}
+
+@theme inline {
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-heading: var(--font-plex-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-subtle: var(--subtle);
+  --color-divider: var(--divider);
+  --color-selected: var(--selected);
+  --color-success: var(--success);
+  --color-status-new: var(--status-new);
+  --color-status-contacted: var(--status-contacted);
+  --color-status-qualified: var(--status-qualified);
+  --color-status-disqualified: var(--status-disqualified);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+}
+
+/*
+ * shadcn's "accent" is its hover/highlight surface, not a brand color.
+ * The Ledger brand accent (ember) is mapped to "primary".
+ */
+:root {
+  --radius: 0.25rem;
+
+  --background: #f5f3ee;
+  --foreground: #1c1a17;
+  --card: #fcfbf8;
+  --card-foreground: #1c1a17;
+  --popover: #ffffff;
+  --popover-foreground: #1c1a17;
+  --primary: #b4441a;
+  --primary-foreground: #ffffff;
+  --secondary: #efece5;
+  --secondary-foreground: #1c1a17;
+  --muted: #efece5;
+  --muted-foreground: #57524a;
+  --accent: #efece5;
+  --accent-foreground: #1c1a17;
+  --destructive: #9a3a16;
+  --border: #dedad1;
+  --input: #c9c3b7;
+  --ring: #b4441a;
+
+  --subtle: #6f695f;
+  --divider: #e7e3da;
+  --selected: #f6e6dd;
+  --success: #2f6b4f;
+  --status-new: #a39c90;
+  --status-contacted: #1f5f8b;
+  --status-qualified: #2f6b4f;
+  --status-disqualified: #9a3a16;
+}
+
+/* Not named text-*: cn()'s class merging would treat it as a font size and drop conflicts. */
+@utility label-caps {
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-subtle);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-sm text-foreground;
+  }
+}
