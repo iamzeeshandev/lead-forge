@@ -54,6 +54,7 @@ interface DataTableProps<TData extends RowData> {
   getRowLabel?: (row: TData) => string;
   activeRowId?: string | null;
   isLoading?: boolean;
+  isRefreshing?: boolean;
   loadingRows?: number;
   empty?: { title: string; description: string };
   minWidth?: string;
@@ -71,6 +72,7 @@ export function DataTable<TData extends RowData>({
   getRowLabel,
   activeRowId,
   isLoading = false,
+  isRefreshing = false,
   loadingRows = 10,
   empty,
   minWidth,
@@ -124,7 +126,7 @@ export function DataTable<TData extends RowData>({
   return (
     <Table
       aria-label={label}
-      aria-busy={isLoading || undefined}
+      aria-busy={isLoading || isRefreshing || undefined}
       className="table-fixed"
       style={{ minWidth }}
     >
@@ -149,7 +151,12 @@ export function DataTable<TData extends RowData>({
           </TableRow>
         ))}
       </TableHeader>
-      <TableBody>
+      <TableBody
+        className={cn(
+          'transition-opacity',
+          isRefreshing && !isLoading && 'opacity-55',
+        )}
+      >
         {isLoading &&
           Array.from({ length: loadingRows }, (_, rowIndex) => (
             <TableRow

@@ -27,12 +27,12 @@ describe('getPageItems', () => {
     expect(render(getPageItems(current, total))).toBe(expected);
   });
 
-  it('clamps a page beyond the last one', () => {
-    expect(render(getPageItems(600, 500))).toBe('1 … 499 [500]');
+  it('marks nothing current past the last page, so the last page is a link', () => {
+    expect(render(getPageItems(600, 500))).toBe('1 … 499 500');
   });
 
-  it('clamps a page below the first one', () => {
-    expect(render(getPageItems(0, 500))).toBe('[1] 2 … 500');
+  it('shows the first pages for a page below the first one', () => {
+    expect(render(getPageItems(0, 500))).toBe('1 2 … 500');
   });
 
   it('returns nothing when there are no pages', () => {

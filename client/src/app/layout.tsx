@@ -3,6 +3,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
 import { AppHeader } from '@/components/layout/app-header';
 import { cn } from '@/lib/utils';
 import './globals.css';
+import { Providers } from './providers';
 
 // next/font downloads these at build time and serves them from our own
 // domain: no request to Google at runtime and no layout shift on load.
@@ -30,8 +31,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={cn('h-full antialiased', plexSans.variable, plexMono.variable)}
     >
       <body className="flex min-h-full flex-col">
-        <AppHeader />
-        {children}
+        <Providers>
+          <AppHeader />
+          {children}
+        </Providers>
       </body>
     </html>
   );
