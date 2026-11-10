@@ -1,5 +1,6 @@
 import { MAX_PAGE } from '@/features/people-search/search-params';
 import { ApiError } from '@/lib/api-error';
+import { delay } from './delay';
 import type { ApiErrorBody, Paginated } from '@/types/api';
 import type { PeopleSearchParams } from '@/types/people-search';
 import type { ProspectPerson } from '@/types/prospect';
@@ -164,26 +165,6 @@ function makePerson(
       ? null
       : new Date(REFERENCE_TIME - (n % 120) * DAY_MS).toISOString(),
   };
-}
-
-// TanStack Query aborts requests it no longer needs (e.g. clicking through pages
-// quickly); the real fetch in Phase 4 honours the same signal.
-function delay(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(signal.reason);
-      return;
-    }
-    const timer = setTimeout(resolve, ms);
-    signal?.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer);
-        reject(signal.reason);
-      },
-      { once: true },
-    );
-  });
 }
 
 export async function searchPeople(

@@ -4,32 +4,25 @@ import type {
   DataTableColumn,
   DataTableFeatures,
 } from '@/components/data/data-table';
+import { TruncatedText } from '@/components/data/truncated-text';
 import { Button } from '@/components/ui/button';
+import { formatDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ProspectPerson } from '@/types/prospect';
-import { formatDay, PHONE_LABELS, personLabel } from './format';
+import { PHONE_LABELS, personLabel } from './format';
 
 const column = createColumnHelper<DataTableFeatures, ProspectPerson>();
 
-function TruncatedText({ value }: { value: string | null }) {
-  if (!value) {
-    return <span className="text-subtle">—</span>;
-  }
-  return (
-    <span className="block truncate text-foreground/90" title={value}>
-      {value}
-    </span>
-  );
-}
-
 interface PeopleColumnsOptions {
   savedIds: ReadonlySet<string>;
+  savingIds: ReadonlySet<string>;
   onSave: (person: ProspectPerson) => void;
   onOpen: (person: ProspectPerson) => void;
 }
 
 export function createPeopleColumns({
   savedIds,
+  savingIds,
   onSave,
   onOpen,
 }: PeopleColumnsOptions): DataTableColumn<ProspectPerson>[] {
@@ -101,22 +94,29 @@ export function createPeopleColumns({
       id: 'actions',
       header: () => <span className="sr-only">Actions</span>,
       meta: { width: '88px', align: 'right' },
-      cell: ({ row }) =>
-        savedIds.has(row.original.externalId) ? (
-          <span className="inline-flex items-center gap-1 text-xs text-success">
-            <Check aria-hidden="true" className="size-3" strokeWidth={2.5} />
-            Saved
-          </span>
-        ) : (
+      cell: ({ row }) => {
+        const { externalId } = row.original;
+        if (savedIds.has(externalId)) {
+          return (
+            <span className="inline-flex items-center gap-1 text-xs text-success">
+              <Check aria-hidden="true" className="size-3" strokeWidth={2.5} />
+              Saved
+            </span>
+          );
+        }
+        const saving = savingIds.has(externalId);
+        return (
           <Button
             variant="outline"
             size="sm"
+            disabled={saving}
             aria-label={`Save ${personLabel(row.original)}`}
             onClick={() => onSave(row.original)}
           >
-            Save
+            {saving ? 'Saving…' : 'Save'}
           </Button>
-        ),
+        );
+      },
     }),
   ]);
   return columns;

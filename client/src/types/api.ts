@@ -15,6 +15,7 @@ export interface Paginated<T> {
 
 export type ApiErrorCode =
   | 'VALIDATION_FAILED'
+  | 'NOT_FOUND'
   | 'PROVIDER_ACCESS_DENIED'
   | 'PROVIDER_RATE_LIMITED'
   | 'PROVIDER_TIMEOUT'

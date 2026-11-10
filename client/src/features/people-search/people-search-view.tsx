@@ -16,6 +16,8 @@ import {
   PER_PAGE_OPTIONS,
   type PeopleSearchParams,
 } from '@/types/people-search';
+import { useImportLeads, useSavedProspects } from '@/features/leads/queries';
+import type { ImportLeadsResult } from '@/types/lead';
 import type { ProspectPerson } from '@/types/prospect';
 import { FilterForm } from './filter-form';
 import { personLabel } from './format';
@@ -63,6 +65,14 @@ function ResultsSummary({ meta }: { meta: PaginationMeta }) {
   );
 }
 
+function describeImport({ imported, skipped }: ImportLeadsResult): string {
+  const saved =
+    imported === 0
+      ? 'Nothing new saved'
+      : `Saved ${imported} ${imported === 1 ? 'lead' : 'leads'}`;
+  return skipped === 0 ? saved : `${saved} · ${skipped} already saved`;
+}
+
 export function PeopleSearchView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,37 +83,90 @@ export function PeopleSearchView() {
 
   // Stored with the search it belongs to: a new search starts with nothing
   // selected, while paging through the same search keeps the selection.
-  const [selection, setSelection] = useState({
-    searchKey,
-    rows: {} as RowSelectionState,
-  });
-  const rowSelection = selection.searchKey === searchKey ? selection.rows : {};
-  const selectedIds = Object.keys(rowSelection);
-
-  const [savedIds, setSavedIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
+  // Each person is kept as a snapshot because a bulk save can include people
+  // from pages that are no longer on screen.
+  const [selection, setSelection] = useState<{
+    searchKey: string;
+    people: Record<string, ProspectPerson>;
+  }>({ searchKey, people: {} });
+  const selectedPeople = useMemo(
+    () => (selection.searchKey === searchKey ? selection.people : {}),
+    [selection, searchKey],
   );
-  const [openPerson, setOpenPerson] = useState<ProspectPerson | null>(null);
+  const rowSelection = useMemo<RowSelectionState>(
+    () =>
+      Object.fromEntries(
+        Object.keys(selectedPeople).map((id) => [id, true as const]),
+      ),
+    [selectedPeople],
+  );
+  const selectedCount = Object.keys(selectedPeople).length;
 
-  const save = useCallback((ids: string[]) => {
-    setSavedIds((current) => new Set([...current, ...ids]));
-  }, []);
+  const [openPerson, setOpenPerson] = useState<ProspectPerson | null>(null);
+  const [importResult, setImportResult] = useState<ImportLeadsResult | null>(
+    null,
+  );
+
+  const lookupIds = useMemo(() => {
+    const ids = (search.data?.items ?? []).map((person) => person.externalId);
+    return openPerson && !ids.includes(openPerson.externalId)
+      ? [...ids, openPerson.externalId]
+      : ids;
+  }, [search.data, openPerson]);
+  const savedLookup = useSavedProspects('apollo', lookupIds);
+  const savedLeadIds = useMemo(
+    () => savedLookup.data ?? {},
+    [savedLookup.data],
+  );
+
+  const {
+    mutate: importPeople,
+    isPending: importing,
+    isError: importFailed,
+    variables: importingPeople,
+  } = useImportLeads();
+
+  const savingIds = useMemo(
+    () =>
+      new Set(
+        importing
+          ? (importingPeople ?? []).map((person) => person.externalId)
+          : [],
+      ),
+    [importing, importingPeople],
+  );
+
+  const saveOne = useCallback(
+    (person: ProspectPerson) =>
+      importPeople([person], { onSuccess: setImportResult }),
+    [importPeople],
+  );
 
   const columns = useMemo(
     () =>
       createPeopleColumns({
-        savedIds,
-        onSave: (person) => save([person.externalId]),
+        savedIds: new Set(Object.keys(savedLeadIds)),
+        savingIds,
+        onSave: saveOne,
         onOpen: setOpenPerson,
       }),
-    [savedIds, save],
+    [savedLeadIds, savingIds, saveOne],
   );
 
   const handleSelectionChange: OnChangeFn<RowSelectionState> = (updater) => {
-    setSelection({
-      searchKey,
-      rows: typeof updater === 'function' ? updater(rowSelection) : updater,
-    });
+    const next =
+      typeof updater === 'function' ? updater(rowSelection) : updater;
+    const visible = new Map(
+      (search.data?.items ?? []).map((person) => [person.externalId, person]),
+    );
+    const people: Record<string, ProspectPerson> = {};
+    for (const id of Object.keys(next)) {
+      const person = selectedPeople[id] ?? visible.get(id);
+      if (person) {
+        people[id] = person;
+      }
+    }
+    setSelection({ searchKey, people });
   };
 
   function navigate(next: PeopleSearchParams) {
@@ -113,8 +176,12 @@ export function PeopleSearchView() {
   }
 
   function saveSelected() {
-    save(selectedIds);
-    setSelection({ searchKey, rows: {} });
+    importPeople(Object.values(selectedPeople), {
+      onSuccess: (result) => {
+        setImportResult(result);
+        setSelection({ searchKey, people: {} });
+      },
+    });
   }
 
   const data = search.data;
@@ -195,6 +262,7 @@ export function PeopleSearchView() {
         className="flex-[1_1_260px]"
         onSubmit={(filters) => {
           setOpenPerson(null);
+          setImportResult(null);
           navigate({ ...filters, page: 1, perPage: params.perPage });
         }}
       />
@@ -205,14 +273,20 @@ export function PeopleSearchView() {
           actions={
             searched && (
               <>
-                {selectedIds.length > 0 && (
+                <span role="status" className="text-xs text-muted-foreground">
+                  {importFailed
+                    ? "Couldn't save. Try again."
+                    : importResult && describeImport(importResult)}
+                </span>
+                {selectedCount > 0 && (
                   <>
                     <span className="text-xs text-muted-foreground">
-                      {selectedIds.length} selected
+                      {selectedCount} selected
                     </span>
-                    <Button onClick={saveSelected}>
-                      Save {selectedIds.length}{' '}
-                      {selectedIds.length === 1 ? 'lead' : 'leads'}
+                    <Button disabled={importing} onClick={saveSelected}>
+                      {importing
+                        ? 'Saving…'
+                        : `Save ${selectedCount} ${selectedCount === 1 ? 'lead' : 'leads'}`}
                     </Button>
                   </>
                 )}
@@ -234,8 +308,9 @@ export function PeopleSearchView() {
         <ProspectSheet
           key={openPerson.externalId}
           person={openPerson}
-          saved={savedIds.has(openPerson.externalId)}
-          onSave={() => save([openPerson.externalId])}
+          savedLeadId={savedLeadIds[openPerson.externalId] ?? null}
+          saving={savingIds.has(openPerson.externalId)}
+          onSave={() => saveOne(openPerson)}
           onClose={() => setOpenPerson(null)}
           className="flex-[1_1_320px]"
         />
