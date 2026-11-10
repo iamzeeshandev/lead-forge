@@ -4,7 +4,7 @@ _Last updated: 2026-11-10_
 
 ## Current phase
 
-**Phase 2 — Client UI with mock data**, task 2.3 (people search with the mock API) is next
+**Phase 2 — Client UI with mock data**, task 2.5 (dashboard and companies) is next
 
 ## Phases
 
@@ -18,8 +18,8 @@ _Last updated: 2026-11-10_
 - [ ] **Phase 2 — Client UI with mock data**
   - [x] 2.1 Design system: "Ledger" approved ([mockup](https://claude.ai/artifact/H3ZnTUJZUDNr4rBvvYAMVE)), tokens, restyled Button, top bar with nav and usage meter, `PageHeader`, `EmptyState`, `ErrorState`, error and 404 pages, empty first states for all four routes
   - [x] 2.2 `DataTable` (TanStack Table v9, row selection, active row, skeleton loading), `Pagination` + `PerPageSelect`, `FilterRail`, `MultiValueInput`, `CheckboxGroup`, `SearchInput`; People page renders them with sample data; client unit tests (Vitest)
-  - [ ] 2.3 People search page with mock data
-  - [ ] 2.4 Saved leads and lead details
+  - [x] 2.3 People search: API contract (`ProspectPerson`, `PeopleSearchParams`, `Paginated<T>`, error codes), filters in the URL, mock API with error triggers, TanStack Query, empty/loading/error/past-last-page states, prospect side panel
+  - [x] 2.4 Saved leads (search as you type, status filter, pagination) and lead details (status, notes, delete with confirmation) on a mock leads API; saving from People search imports with duplicate skipping
   - [ ] 2.5 Dashboard and companies
 - [ ] **Phase 3 — Apollo integration fundamentals**
 - [ ] **Phase 4 — Client ↔ server (live people search)**
@@ -86,6 +86,30 @@ _Last updated: 2026-11-10_
 | `formatRange` returns `0` for a page past the last result | Apollo answers an out-of-range page with an empty list, not an error |
 | Vitest added to the client, explicit imports (no globals) | Pure logic such as `getPageItems` needs real tests; same runner as the server |
 | Multi-value inputs dedupe case-insensitively and commit on blur | "CTO" and "cto" are the same filter; typed text isn't lost when you click Search |
+| API contract uses our own filter values (`'51-200'`, `'c_suite'`), not Apollo's formats | The server maps them to the provider; the client and URLs never depend on one provider |
+| `ProspectPerson` holds only what the free search returns, plus `source` | Masked last name and availability flags; `source` leaves room for a second provider |
+| One error envelope `{ statusCode, code, message, retryAfterSeconds?, requestId? }` | The UI branches on `code`; `requestId` carries Apollo's id for support |
+| Filters live in the URL, with the same names as the API query | Shareable searches, working Back/Forward, one serializer for both |
+| URL parsed with Zod and `.catch()` defaults | The URL is user input: bad values fall back instead of crashing |
+| `page` always written to the URL | Its presence marks that a search ran, even one with no filters |
+| Filter rail edits a draft; only Search applies it | Search on submit, not per keystroke; the form is keyed by the applied search so Back/Forward refill it |
+| A new search clears the row selection; paging keeps it | Prevents bulk-saving people from a search that is no longer on screen |
+| TanStack Query: `retry: false`, `staleTime` 5 min, `keepPreviousData` | Default retries would triple Apollo requests; cached pages cost nothing; paging doesn't flash empty |
+| `QueryClient` created in `useState`, not at module level | A module-level client is shared across server-render requests |
+| Mock API: deterministic per search and position, honours `AbortSignal`, `test:` keyword triggers | Same results every time; behaves like the real fetch; every error state is reachable |
+| `<Suspense>` around the People view | Without it `useSearchParams()` fails the production build (verified by removing it) |
+| Pagination marks no page current past the last page | Found in the browser: page 450 of 397 highlighted 397 and left no way back; Previous now jumps to the last page |
+| `Lead` contract follows the Phase 5 model, plus `hasEmail`/`directPhone` snapshots from search | Before enrichment those flags are all we know about contact details |
+| Import skips duplicates by `(source, externalId)`, including repeats within one request; returns `{ imported, skipped }` | Mirrors the database's unique constraint, so the UI can say "1 already saved" |
+| Mock leads persisted in `localStorage` | Saved leads survive reloads until Phase 5's database |
+| Query-key factory (`leadKeys`), every key under `['leads']` | One invalidation after a mutation refreshes lists, details and "already saved" markers together |
+| Delete removes the cached detail instead of invalidating it | Refetching a deleted lead would only produce a 404 |
+| Bulk save sends snapshots taken when each row was ticked | Selection spans pages, but only the current page's data is loaded |
+| "Already saved" markers via a lookup query (`findSavedProspects`) | Keeps the search module independent of how leads are stored (plan's `POST /leads/lookup`) |
+| Saved leads search filters as you type (debounced, `router.replace`); Apollo search waits for submit | Our database is cheap to query; Apollo requests spend rate limit. `replace` avoids a history entry per keystroke |
+| Status and notes use separate mutations on the details page | Saving notes doesn't lock the status picker, and each shows its own error |
+| `ConfirmDialog` stays open until the action succeeds; focus starts on Cancel | A failed delete shows its error; Enter can't delete by accident |
+| `shadcn add` of a component that depends on `button` must answer "no" to overwriting | `--yes` doesn't answer that prompt; overwriting would drop the Ledger button |
 
 ## Git
 
@@ -99,7 +123,9 @@ _Last updated: 2026-11-10_
 | `feature/client-setup` | Task 1.2 | Merged into `dev` (PR #2, `cce48ac`) |
 | `feature/database-setup` | Task 1.3 | Merged into `dev` (PR #3, `25d0f61`) |
 | `feature/client-design-system` | Task 2.1 (also carries the task 1.4 docs) | Merged into `dev` (PR #4, `08c2256`) |
-| `feature/client-data-table` | Task 2.2 | Ready to commit and open a PR into `dev` |
+| `feature/client-data-table` | Task 2.2 | Merged into `dev` (PR #5, `46d401d`) |
+| `feature/client-people-search` | Task 2.3 | Merged into `dev` (PR #6, `97666e9`); its docs ride along with task 2.4 |
+| `feature/client-saved-leads` | Task 2.4 | Ready to commit and open a PR into `dev` |
 
 ### Commits and PRs
 
@@ -118,8 +144,12 @@ _Last updated: 2026-11-10_
 | 2026-11-10 | `feature/client-design-system` | `38535d6` feat(client): add ledger design system and app shell |
 | 2026-11-10 | `feature/client-design-system` | `7cdd6c5` docs: record apollo access check and design system |
 | 2026-11-10 | `dev` | `08c2256` Merge PR #4 (design system) |
-| 2026-11-10 | `feature/client-data-table` | `feat(client): add data table, pagination and filter components` |
-| 2026-11-10 | `feature/client-data-table` | `docs: update progress for data components` |
+| 2026-11-10 | `feature/client-data-table` | `d1c3c84` feat(client): add data table, pagination and filter components (code and docs in one commit) |
+| 2026-11-10 | `dev` | `46d401d` Merge PR #5 (data components) |
+| 2026-11-10 | `feature/client-people-search` | `15d8c8a` feat(client): add people search with url state and mock api |
+| 2026-11-10 | `dev` | `97666e9` Merge PR #6 (people search) |
+| 2026-11-10 | `feature/client-saved-leads` | `feat(client): add saved leads and lead details` |
+| 2026-11-10 | `feature/client-saved-leads` | `docs: update progress for people search and saved leads` |
 
 ## Known issues and risks
 
@@ -132,11 +162,12 @@ _Last updated: 2026-11-10_
 - `origin/main` is still 1 commit behind local `main` (`git push origin main`).
 
 - **shadcn CLI writes Mira defaults** (28px inputs, dark-mode classes). Every `shadcn add` needs restyling to Ledger tokens.
-- **Open UX decision for task 2.3:** should a new search clear the row selection? Selection currently survives searches as well as paging.
+- **Mock leads live in this browser only** (`localStorage` key `leadforge:mock-leads`). Phase 5 moves them to Postgres; clear the key to start fresh.
+- **Stand-alone `tsc` can report stale route types** after adding a route. Run `npx next typegen` (or `npm run build`, which regenerates them).
 - **Usage meter shows "—"** until Phase 4 passes Apollo's rate-limit headers to the client. The mockup's "credits left" figure is left out until we confirm an endpoint the scoped key can read it from.
 - **Prisma 8** is in release candidate, and the default Prisma docs already describe it. Use the v7 docs (`prisma.io/docs/orm/v7`, `/guides/v7`) until we decide to upgrade.
 
 ## Next step
 
-1. Commit `feature/client-data-table`, push it, open a PR into `dev` and merge.
-2. Task 2.3 (🤝): design the people-search API contract together (request filters, `ProspectPerson`, pagination meta), then the mock API, filters in the URL, TanStack Query and the prospect side sheet.
+1. Commit `feature/client-saved-leads`, push it, open a PR into `dev` and merge.
+2. Task 2.5: dashboard (stat strip and distributions from the mock leads) and the companies page, then release v0.1.0 to `main`.

@@ -2,48 +2,28 @@
 
 import { X } from 'lucide-react';
 import Link from 'next/link';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { DetailList } from '@/components/data/detail-list';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { formatDay } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { ProspectPerson } from '@/types/prospect';
-import { formatDay, PHONE_LABELS } from './format';
+import { PHONE_LABELS } from './format';
 
 interface ProspectSheetProps {
   person: ProspectPerson;
-  saved: boolean;
+  /** The LeadForge lead id when this person is already saved. */
+  savedLeadId: string | null;
+  saving: boolean;
   onSave: () => void;
   onClose: () => void;
   className?: string;
 }
 
-function Details({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: Array<[string, ReactNode]>;
-}) {
-  return (
-    <section className="flex flex-col gap-2">
-      <h3 className="label-caps">{title}</h3>
-      <dl className="grid grid-cols-[112px_minmax(0,1fr)] border-t border-divider">
-        {rows.map(([label, value]) => (
-          <div
-            key={label}
-            className="col-span-2 grid grid-cols-subgrid border-b border-divider py-1.75"
-          >
-            <dt className="text-subtle">{label}</dt>
-            <dd className="min-w-0">{value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-}
-
 export function ProspectSheet({
   person,
-  saved,
+  savedLeadId,
+  saving,
   onSave,
   onClose,
   className,
@@ -97,14 +77,14 @@ export function ProspectSheet({
             aria-hidden="true"
             className={cn(
               'size-1.5 rounded-full',
-              saved ? 'bg-success' : 'bg-status-new',
+              savedLeadId ? 'bg-success' : 'bg-status-new',
             )}
           />
-          {saved ? 'Saved to leads' : 'Not saved'}
+          {savedLeadId ? 'Saved to leads' : 'Not saved'}
         </span>
       </div>
 
-      <Details
+      <DetailList
         title="What the search returned"
         rows={[
           [
@@ -133,7 +113,7 @@ export function ProspectSheet({
         ]}
       />
 
-      <Details
+      <DetailList
         title="Source"
         rows={[
           ['Provider', 'Apollo · sandbox'],
@@ -147,16 +127,16 @@ export function ProspectSheet({
       />
 
       <div className="mt-auto flex flex-col gap-2">
-        {saved ? (
+        {savedLeadId ? (
           <Link
-            href="/leads"
+            href={`/leads/${savedLeadId}`}
             className={buttonVariants({ variant: 'outline', size: 'lg' })}
           >
-            Open saved leads
+            Open saved lead
           </Link>
         ) : (
-          <Button size="lg" onClick={onSave}>
-            Save lead
+          <Button size="lg" disabled={saving} onClick={onSave}>
+            {saving ? 'Saving…' : 'Save lead'}
           </Button>
         )}
         <Button size="lg" variant="outline" disabled>

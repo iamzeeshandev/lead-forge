@@ -87,6 +87,10 @@ npm run dev            # http://localhost:3000
 
 UI components come from [shadcn/ui](https://ui.shadcn.com/) on Base UI primitives. Add one with `npx shadcn@latest add <component>`, then run `npm run format`.
 
+Until the client calls the server (Phase 4), People search runs on a mock API (`src/mocks/people-api.ts`) with the same signature as the real one. Type one of these into **Keywords** to see each state: `test:empty`, `test:rate-limit`, `test:access-denied`, `test:timeout`, `test:unavailable`.
+
+Saved leads use a mock too (`src/mocks/leads-api.ts`), stored in the browser's `localStorage` under `leadforge:mock-leads`. Remove that key to start with no saved leads.
+
 Design tokens (colors, type scale, radius) live in `src/app/globals.css`. For a link that looks like a button, use `<Link className={buttonVariants()}>` rather than `<Button render={<Link />}>`, which would announce it as a button.
 
 ## Git workflow
