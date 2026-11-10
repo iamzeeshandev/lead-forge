@@ -86,6 +86,8 @@ npm run dev            # http://localhost:3000
 
 UI components come from [shadcn/ui](https://ui.shadcn.com/) on Base UI primitives. Add one with `npx shadcn@latest add <component>`, then run `npm run format`.
 
+Design tokens (colors, type scale, radius) live in `src/app/globals.css`. For a link that looks like a button, use `<Link className={buttonVariants()}>` rather than `<Button render={<Link />}>`, which would announce it as a button.
+
 ## Git workflow
 
 - `main`: stable, presentable releases
