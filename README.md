@@ -29,14 +29,37 @@ lead-forge/
 
 ## Getting started
 
-Setup instructions are added as each part of Phase 1 is completed.
-
 Requirements:
 
 - Node.js 24 (see `.nvmrc`)
 - npm
 - Docker Desktop (for PostgreSQL)
 - An Apollo.io API key (kept in `server/.env`, never committed)
+
+### Server
+
+```bash
+cd server
+npm install
+cp .env.example .env   # adjust values if needed
+npm run start:dev      # http://localhost:4000/api
+```
+
+Check that it runs: `curl http://localhost:4000/api/health`
+
+The server validates its environment variables at startup and refuses to start if one is missing or invalid.
+
+| Command | Purpose |
+|---|---|
+| `npm run start:dev` | Run with file watching |
+| `npm run build` | Compile to `dist/` |
+| `npm run lint` | Lint with oxlint (type-aware) |
+| `npm test` | Unit tests (Vitest) |
+| `npm run test:e2e` | End-to-end tests (Vitest + Supertest) |
+
+### Client
+
+Added in task 1.2.
 
 ## Git workflow
 
