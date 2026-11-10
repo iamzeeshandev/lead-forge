@@ -33,7 +33,9 @@ export function getPageItems(
     } else if (previous !== undefined && p - previous > 2) {
       items.push({ type: 'gap', id: `gap-after-${previous}` });
     }
-    items.push({ type: 'page', page: p, isCurrent: p === page });
+    // Compared with the requested page, not the clamped one: past the last page
+    // nothing is current, so the last page stays a link back into range.
+    items.push({ type: 'page', page: p, isCurrent: p === current });
   });
   return items;
 }

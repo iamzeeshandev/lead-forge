@@ -7,18 +7,9 @@ import type {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ProspectPerson } from '@/types/prospect';
+import { formatDay, PHONE_LABELS, personLabel } from './format';
 
 const column = createColumnHelper<DataTableFeatures, ProspectPerson>();
-
-const PHONE_LABELS: Record<ProspectPerson['directPhone'], string> = {
-  yes: 'Yes',
-  maybe: 'Maybe',
-  no: '—',
-};
-
-export function personLabel(person: ProspectPerson): string {
-  return [person.firstName, person.lastNameMasked].filter(Boolean).join(' ');
-}
 
 function TruncatedText({ value }: { value: string | null }) {
   if (!value) {
@@ -34,11 +25,13 @@ function TruncatedText({ value }: { value: string | null }) {
 interface PeopleColumnsOptions {
   savedIds: ReadonlySet<string>;
   onSave: (person: ProspectPerson) => void;
+  onOpen: (person: ProspectPerson) => void;
 }
 
 export function createPeopleColumns({
   savedIds,
   onSave,
+  onOpen,
 }: PeopleColumnsOptions): DataTableColumn<ProspectPerson>[] {
   // Assigned before returning: returning the array directly lets the return
   // type's `any` flow into every accessor and erase its cell value type.
@@ -48,14 +41,18 @@ export function createPeopleColumns({
       header: 'Name',
       meta: { width: '22%' },
       cell: ({ row }) => (
-        <span className="block truncate font-medium">
-          {row.original.firstName}{' '}
+        <button
+          type="button"
+          onClick={() => onOpen(row.original)}
+          className="block max-w-full cursor-pointer truncate text-left font-medium hover:underline hover:underline-offset-2"
+        >
+          {row.original.firstName ?? 'Unnamed'}{' '}
           {row.original.lastNameMasked && (
             <span className="font-mono font-normal text-muted-foreground">
               {row.original.lastNameMasked}
             </span>
           )}
-        </span>
+        </button>
       ),
     }),
     column.accessor('title', {
@@ -96,7 +93,7 @@ export function createPeopleColumns({
       meta: { width: '100px', align: 'right' },
       cell: ({ getValue }) => (
         <span className="font-mono text-xs text-muted-foreground">
-          {getValue() ?? '—'}
+          {formatDay(getValue())}
         </span>
       ),
     }),

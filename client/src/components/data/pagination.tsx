@@ -31,7 +31,7 @@ export function Pagination({
             variant="outline"
             size="sm"
             disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
+            onClick={() => onPageChange(Math.min(page - 1, totalPages))}
           >
             <ChevronLeft aria-hidden="true" />
             Previous
