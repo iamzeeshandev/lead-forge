@@ -4,18 +4,23 @@ _Last updated: 2026-11-10_
 
 ## Current phase
 
-**Phase 1 — Project Setup**, task 1.4 (Apollo access check) is next
+**Phase 2 — Client UI with mock data**, task 2.2 (data table, pagination, filters) is next
 
 ## Phases
 
 - [x] **Phase 0 — Planning.** Plan approved on 2026-11-10 → [docs/PLAN.md](docs/PLAN.md)
-- [ ] **Phase 1 — Project Setup**
+- [x] **Phase 1 — Project Setup**
   - [x] 1.0 Bootstrap repository (README, .gitignore, .gitattributes, .nvmrc, plan, progress tracker)
   - [x] 1.1 Server setup (NestJS 12 on :4000, `/api`, Zod env validation, CORS, `GET /api/health`)
   - [x] 1.2 Client setup (Next.js 16, Tailwind 4, shadcn/ui on Base UI, IBM Plex fonts, Prettier on :3000)
   - [x] 1.3 Database setup (Docker Compose Postgres 18, Prisma 7.10.1 with the pg adapter, database status in health check)
-  - [ ] 1.4 Apollo access check (0-credit test call)
+  - [x] 1.4 Apollo access check: People Search `403` (not in the Free plan), company enrichment `200` (1 credit). Decision: hybrid integration ([docs/PLAN.md §7](docs/PLAN.md))
 - [ ] **Phase 2 — Client UI with mock data**
+  - [x] 2.1 Design system: "Ledger" approved ([mockup](https://claude.ai/artifact/H3ZnTUJZUDNr4rBvvYAMVE)), tokens, restyled Button, top bar with nav and usage meter, `PageHeader`, `EmptyState`, `ErrorState`, error and 404 pages, empty first states for all four routes
+  - [ ] 2.2 `DataTable`, `Pagination`, search and filter inputs, `LoadingState`
+  - [ ] 2.3 People search page with mock data
+  - [ ] 2.4 Saved leads and lead details
+  - [ ] 2.5 Dashboard and companies
 - [ ] **Phase 3 — Apollo integration fundamentals**
 - [ ] **Phase 4 — Client ↔ server (live people search)**
 - [ ] **Phase 5 — Database & lead management**
@@ -40,6 +45,7 @@ _Last updated: 2026-11-10_
 | `.gitattributes` forces LF line endings | `core.autocrlf=true` on Windows would make Prettier/ESLint fail on every file |
 | Merge feature → dev with merge commits (no squash) | Keeps individual commits in history |
 | 1–2 commits per task: code, then docs | Changed from "one commit per logical group" (2026-11-10): simpler history |
+| Minor docs changes ride along with the next task's branch | No separate branch, commit or PR for small updates |
 | **Zod** for env and request validation (plan said class-validator) | Changed in task 1.1. Nest 12 docs recommend Zod for new projects; one schema gives both the runtime check and the TS type |
 | Kept Nest 12 defaults: ESM, Vitest, oxlint | Current official tooling; relative imports need `.js` extensions |
 | oxlint `no-explicit-any` set to `error` (scaffold had it off) | Project rule: avoid `any` |
@@ -63,6 +69,15 @@ _Last updated: 2026-11-10_
 | No `$connect()` at startup; health returns `503` when the DB is down | DB outages are temporary: the app degrades and recovers instead of refusing to boot |
 | pg pool `connectionTimeoutMillis: 5000` and `onPoolError` logging | pg waits forever by default; idle-connection errors were otherwise silent |
 | `PrismaModule` imported explicitly, not `@Global()` | Each module's database dependency stays visible |
+| **Hybrid Apollo integration**: live company enrichment, fake Apollo server for search and person enrichment | The Free plan doesn't include search endpoints; the code stays identical either way |
+| Apollo key `leadforge-local`: scoped to `organizations/enrich`, not a master key, integration type Private | Least privilege; a leaked key can't spend credits on other endpoints |
+| Ledger tokens mapped onto shadcn's semantic variables (`primary` = ember, `accent` = hover surface) | Every shadcn component picks up the look without per-component overrides |
+| Compact type scale (`text-sm` = 13px) defined in the Tailwind theme | Dense data UI; shadcn components shrink with it automatically |
+| Links styled as buttons use `buttonVariants()` on `<Link>` | Base UI's `render={<Link />}` adds `role="button"`, which screen readers announce wrongly |
+| `typedRoutes: true` | A mistyped `href` fails the build ("Did you mean '/people'?") instead of producing a 404 |
+| `error.tsx` uses Next 16's `retry()` and treats `error` as `unknown` | `retry()` re-fetches as well as re-renders; client code can throw non-`Error` values |
+| No dark mode yet; shadcn's grey `.dark` palette removed | It wasn't part of the approved design; tokens make it addable later |
+| `LoadingState` moves to task 2.2 | Its skeleton should match the real table columns, so it's built with the `DataTable` |
 
 ## Git
 
@@ -74,7 +89,8 @@ _Last updated: 2026-11-10_
 | `dev` | Integration | Pushed |
 | `feature/server-setup` | Task 1.1 | Merged into `dev` (PR #1, `a0ad838`) |
 | `feature/client-setup` | Task 1.2 | Merged into `dev` (PR #2, `cce48ac`) |
-| `feature/database-setup` | Task 1.3 | Ready to commit and open a PR into `dev` |
+| `feature/database-setup` | Task 1.3 | Merged into `dev` (PR #3, `25d0f61`) |
+| `feature/client-design-system` | Task 2.1 (also carries the task 1.4 docs) | Ready to commit and open a PR into `dev` |
 
 ### Commits and PRs
 
@@ -88,13 +104,14 @@ _Last updated: 2026-11-10_
 | 2026-11-10 | `dev` | `a0ad838` Merge PR #1 (server setup) |
 | 2026-11-10 | `feature/client-setup` | `c7e69a8` feat(client): set up shadcn/ui, fonts and prettier (scaffold, setup and docs in one commit) |
 | 2026-11-10 | `dev` | `cce48ac` Merge PR #2 (client setup) |
-| 2026-11-10 | `feature/database-setup` | `feat(db): add postgres with prisma and a database health check` |
-| 2026-11-10 | `feature/database-setup` | `docs: add database setup steps` |
+| 2026-11-10 | `feature/database-setup` | `b6fb21e` feat(db): add postgres with prisma and a database health check (code and docs in one commit) |
+| 2026-11-10 | `dev` | `25d0f61` Merge PR #3 (database setup) |
+| 2026-11-10 | `feature/client-design-system` | `feat(client): add ledger design system and app shell` |
+| 2026-11-10 | `feature/client-design-system` | `docs: record apollo access check and design system` |
 
 ## Known issues and risks
 
-- **Apollo access unverified.** The account uses a non-work email. Apollo requires a work email for free-plan search, so a 403 is likely. Checked in task 1.4; fallbacks are in [docs/PLAN.md §7](docs/PLAN.md).
-- **Company search** costs 1 credit per page and may require a paid plan.
+- **Apollo Free plan limits** (confirmed in task 1.4). No API access to people search, company search or person enrichment; those run on the fake server. Company enrichment works: 1 credit each, 74 of 75 credits left, 50 requests/min · 200/hour · 600/day.
 - **Docker Desktop** must be running for PostgreSQL and the e2e tests.
 
 - Requests outside `/api` get Express's default HTML 404 (Nest's JSON 404 handler only covers the `/api` prefix). Acceptable: no routes live outside `/api`.
@@ -102,9 +119,10 @@ _Last updated: 2026-11-10_
 - **ESLint 9** is in maintenance (10 is latest). Next 16.4's scaffold pins `^9`; upgrade once `eslint-config-next` supports 10.
 - `origin/main` is still 1 commit behind local `main` (`git push origin main`).
 
+- **Usage meter shows "—"** until Phase 4 passes Apollo's rate-limit headers to the client. The mockup's "credits left" figure is left out until we confirm an endpoint the scoped key can read it from.
 - **Prisma 8** is in release candidate, and the default Prisma docs already describe it. Use the v7 docs (`prisma.io/docs/orm/v7`, `/guides/v7`) until we decide to upgrade.
 
 ## Next step
 
-1. Commit `feature/database-setup`, push it, open a PR into `dev` and merge.
-2. Task 1.4 (you): create a scoped Apollo API key and run the 0-credit access check from [docs/PLAN.md](docs/PLAN.md). Record the result here.
+1. Commit `feature/client-design-system`, push it, open a PR into `dev` and merge.
+2. Task 2.2: `DataTable` (TanStack Table), `Pagination`, search and filter inputs, `LoadingState`.

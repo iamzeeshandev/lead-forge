@@ -1,6 +1,8 @@
 # LeadForge — Technical Plan
 
 > Approved on 2026-11-10 (Phase 0). Changes after approval are recorded in [DEVELOPMENT_PROGRESS.md](../DEVELOPMENT_PROGRESS.md).
+>
+> **Amendment (2026-11-10, after task 1.4):** the Free Apollo plan doesn't include People Search, so the integration is **hybrid**: live company enrichment plus a fake Apollo server for search. See [§7](#7-apollo-access-hybrid-integration-decided-after-task-14). It supersedes the Apollo parts of §2 "Impact on the product" and §10 for Phases 3, 6 and 7.
 
 ## Context
 
@@ -203,12 +205,26 @@ Nest  → { items: ProspectPerson[25], meta: { page:3, perPage:25, totalItems:48
 
 ---
 
-## 7. Fallback if Apollo Blocks Your Account
+## 7. Apollo Access: Hybrid Integration (decided after task 1.4)
 
-The 0-credit test call decides this. If it returns 403:
-- **A (best for learning):** create an Apollo account with an email on a domain you control. A cheap domain plus free mail forwarding is enough to receive verification.
-- **B:** an Apollo paid trial, if one is offered.
-- **C (always available):** a small **fake Apollo server** (`tools/apollo-fake/`, zero-dependency Node script) that serves documented response shapes and can simulate 401/403/429/500/timeout. Our client, mapper and error handling stay 100% identical; only `APOLLO_BASE_URL` changes. It's worth building even with live access, for deterministic demos and error-path testing that doesn't burn rate limits.
+**What the access check showed** (Free plan, 75 credits, key scoped to `organizations/enrich`):
+
+| Endpoint | Result |
+|---|---|
+| `POST /api/v1/mixed_people/api_search` | `403`, `error_details.code` = `AUTH.AUTHORIZATION.ENDPOINT_ACCESS_DENIED` (legacy `error_code` = `API_INACCESSIBLE`): "not included in your Free plan… all paid plans include full API access". No rate-limit headers. |
+| `GET /api/v1/organizations/enrich?domain=apollo.io` | `200`, 1 credit, headers report 50/min · 200/hour · 600/day |
+| Not selectable when creating a key | `mixed_companies/search`, `people/match`, `people/bulk_match`, `people/show`, `organizations/show` |
+
+**Decision: hybrid**
+- **Live:** company enrichment (`organizations/enrich`, later `organizations/bulk_enrich` if needed). Real auth, credits, rate-limit headers and messy data.
+- **Fake Apollo:** people search, company search and person enrichment. A local server returns the documented response shapes (plus the real `403` shape above), sends the same rate-limit headers, and can simulate 401/403/422/429/500/timeouts. Endpoints it doesn't fake pass through to the live API, so the server keeps a single `APOLLO_BASE_URL`. The tool (hand-written Node server or WireMock) is chosen at the start of Phase 3.
+- Moving an endpoint to live later (e.g. after a plan upgrade) means deleting its fake route. The NestJS code doesn't change.
+
+**Roadmap changes**
+- **Phase 3:** the first integration is **live company enrichment** (a GET, one object, real errors, 1 credit). Then people search against the fake server (POST, array parameters, pagination, masked names).
+- **Phase 6:** becomes **company lookup by domain** (live enrichment) plus company search (fake).
+- **Phase 7:** person enrichment runs against the fake server only.
+- **Credit budget** (74 left): Phase 3 ≤ 10, Phase 6 ≤ 40, Phase 9 ≤ 10, the rest as buffer. Never enrich the same domain twice: check our database first.
 
 ---
 
