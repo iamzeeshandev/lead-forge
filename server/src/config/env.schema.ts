@@ -15,6 +15,7 @@ export const envSchema = z.object({
     .url()
     .refine((value) => !value.endsWith('/'), 'must not end with a slash')
     .default('http://localhost:3000'),
+  DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
 });
 
 export type Env = z.infer<typeof envSchema>;

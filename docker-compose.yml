@@ -1,0 +1,25 @@
+name: leadforge
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: leadforge
+      POSTGRES_PASSWORD: leadforge
+      POSTGRES_DB: leadforge
+    ports:
+      # Bind to localhost only. A bare "5432:5432" publishes the database on every network interface.
+      # Host port 5434 avoids clashing with other local Postgres containers; override with POSTGRES_PORT.
+      - '127.0.0.1:${POSTGRES_PORT:-5434}:5432'
+    volumes:
+      # Postgres 18+ stores data in /var/lib/postgresql/18/docker. Mounting the old
+      # /var/lib/postgresql/data path would lose all data when the container is recreated.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U leadforge -d leadforge']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

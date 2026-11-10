@@ -8,6 +8,8 @@ import type { Env } from './config/env.schema.js';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   configureApp(app);
+  // Nest ignores SIGINT/SIGTERM by default, so onModuleDestroy (closing the DB pool) would never run.
+  app.enableShutdownHooks();
 
   const port = app
     .get<ConfigService<Env, true>>(ConfigService)
