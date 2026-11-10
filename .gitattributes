@@ -1,0 +1,8 @@
+# Keep LF line endings in the repo and the working tree, whatever core.autocrlf is set to.
+# Prettier and ESLint expect LF; without this, Windows checkouts get CRLF and every file fails lint.
+* text=auto eol=lf
+
+# Windows scripts need CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
