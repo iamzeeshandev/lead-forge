@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import { AppHeader } from '@/components/layout/app-header';
 import { cn } from '@/lib/utils';
 import './globals.css';
 
@@ -28,7 +29,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       lang="en"
       className={cn('h-full antialiased', plexSans.variable, plexMono.variable)}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <AppHeader />
+        {children}
+      </body>
     </html>
   );
 }

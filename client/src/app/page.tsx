@@ -1,17 +1,31 @@
-import { Button } from '@/components/ui/button';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { EmptyState } from '@/components/feedback/empty-state';
+import { PageHeader } from '@/components/layout/page-header';
+import { buttonVariants } from '@/components/ui/button';
 
-// Temporary page to confirm the setup works. Replaced in Phase 2.
-export default function HomePage() {
+// The layout's title template only applies to child segments, and this page
+// shares the root segment with the layout, so the full title is set here.
+export const metadata: Metadata = {
+  title: { absolute: 'Overview · LeadForge' },
+};
+
+export default function OverviewPage() {
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-3 px-6 py-16">
-      <p className="font-mono text-xs text-muted-foreground">client · :3000</p>
-      <h1 className="text-2xl font-semibold">LeadForge</h1>
-      <p className="text-sm text-muted-foreground">
-        The client is running. Pages and the design system are built in Phase 2.
-      </p>
-      <div>
-        <Button>Sample button</Button>
-      </div>
+    <main className="mx-auto flex w-full max-w-340 flex-col gap-6 px-6 pt-6 pb-8">
+      <PageHeader
+        title="Overview"
+        description="Everything here is counted from your LeadForge database, not from Apollo."
+        actions={
+          <Link href="/people" className={buttonVariants()}>
+            Find people
+          </Link>
+        }
+      />
+      <EmptyState
+        title="Nothing to count yet"
+        description="Save leads from People search and this page fills with totals, recent imports and status breakdowns."
+      />
     </main>
   );
 }
