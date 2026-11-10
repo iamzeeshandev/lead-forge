@@ -9,14 +9,16 @@ import type { ProspectPerson, ProspectSource } from '@/types/prospect';
 import {
   deleteLead,
   findSavedProspects,
+  getDashboardSummary,
   getLead,
   importLeads,
+  listLeadCompanies,
   listLeads,
   updateLead,
 } from './api';
 
-// Every key starts with 'leads', so one invalidation refreshes lists, details
-// and the "already saved" markers in search together.
+// Every key starts with 'leads', so one invalidation refreshes lists, details,
+// the "already saved" markers in search, and everything counted from leads.
 export const leadKeys = {
   all: ['leads'] as const,
   lists: () => [...leadKeys.all, 'list'] as const,
@@ -24,7 +26,23 @@ export const leadKeys = {
   detail: (id: string) => [...leadKeys.all, 'detail', id] as const,
   saved: (source: ProspectSource, externalIds: string[]) =>
     [...leadKeys.all, 'saved', source, externalIds] as const,
+  summary: () => [...leadKeys.all, 'summary'] as const,
+  companies: () => [...leadKeys.all, 'companies'] as const,
 };
+
+export function useDashboardSummary() {
+  return useQuery({
+    queryKey: leadKeys.summary(),
+    queryFn: ({ signal }) => getDashboardSummary(signal),
+  });
+}
+
+export function useLeadCompanies() {
+  return useQuery({
+    queryKey: leadKeys.companies(),
+    queryFn: ({ signal }) => listLeadCompanies(signal),
+  });
+}
 
 export function useLeads(params: LeadListParams) {
   return useQuery({
@@ -67,7 +85,12 @@ export function useUpdateLead(id: string) {
     mutationFn: (update: LeadUpdate) => updateLead(id, update),
     onSuccess: (lead) => {
       queryClient.setQueryData(leadKeys.detail(id), lead);
-      return queryClient.invalidateQueries({ queryKey: leadKeys.lists() });
+      // Status and notes show up in lists and in the dashboard counts; "already
+      // saved" lookups and company groups don't depend on them.
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: leadKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: leadKeys.summary() }),
+      ]);
     },
   });
 }

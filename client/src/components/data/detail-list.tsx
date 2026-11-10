@@ -3,12 +3,17 @@ import type { ReactNode } from 'react';
 interface DetailListProps {
   title: string;
   rows: ReadonlyArray<readonly [label: string, value: ReactNode]>;
+  headingLevel?: 'h2' | 'h3';
 }
 
-export function DetailList({ title, rows }: DetailListProps) {
+export function DetailList({
+  title,
+  rows,
+  headingLevel: Heading = 'h2',
+}: DetailListProps) {
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="label-caps">{title}</h2>
+      <Heading className="label-caps">{title}</Heading>
       <dl className="grid grid-cols-[112px_minmax(0,1fr)] border-t border-divider">
         {rows.map(([label, value]) => (
           <div

@@ -47,6 +47,11 @@ export function resetMockLeads() {
   writeStore([]);
 }
 
+/** Read access for the other mocks (dashboard, companies) that count saved leads. */
+export function mockLeadsSnapshot(): readonly Lead[] {
+  return readStore();
+}
+
 function notFound(): ApiError {
   return new ApiError({
     statusCode: 404,

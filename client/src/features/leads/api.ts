@@ -1,3 +1,5 @@
+export { listLeadCompanies } from '@/mocks/companies-api';
+export { getDashboardSummary } from '@/mocks/dashboard-api';
 export {
   deleteLead,
   findSavedProspects,

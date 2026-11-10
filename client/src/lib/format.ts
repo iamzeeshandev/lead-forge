@@ -3,6 +3,22 @@ export function formatDay(isoDateTime: string | null): string {
   return isoDateTime ? isoDateTime.slice(0, 10) : '—';
 }
 
+const compactCurrency = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
+
+/** "$150M" from 150000000. */
+export function formatCompactCurrency(value: number | null): string {
+  return value === null ? '—' : compactCurrency.format(value);
+}
+
+export function formatNumber(value: number | null): string {
+  return value === null ? '—' : value.toLocaleString('en-US');
+}
+
 export function formatDateTime(isoDateTime: string | null): string {
   if (!isoDateTime) {
     return '—';
