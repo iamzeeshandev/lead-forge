@@ -16,6 +16,13 @@ export const envSchema = z.object({
     .refine((value) => !value.endsWith('/'), 'must not end with a slash')
     .default('http://localhost:3000'),
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
+  APOLLO_API_KEY: z.string().trim().min(1),
+  // http is allowed so the key can point at a local fake Apollo server.
+  APOLLO_BASE_URL: z
+    .url({ protocol: /^https?$/ })
+    .refine((value) => !value.endsWith('/'), 'must not end with a slash')
+    .default('https://api.apollo.io/api/v1'),
+  APOLLO_TIMEOUT_MS: z.coerce.number().int().min(1).max(60_000).default(10_000),
 });
 
 export type Env = z.infer<typeof envSchema>;
