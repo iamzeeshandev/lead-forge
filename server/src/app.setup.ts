@@ -3,6 +3,7 @@ import {
   StandardSchemaValidationPipe,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
 import type { Env } from './config/env.schema.js';
 
 /**
@@ -16,5 +17,6 @@ export function configureApp(app: INestApplication): void {
   // Validates every @Body/@Query/@Param that declares a Zod schema and
   // passes the parsed (coerced) value to the handler.
   app.useGlobalPipes(new StandardSchemaValidationPipe());
+  app.useGlobalFilters(new ApiExceptionFilter());
   app.enableCors({ origin: config.get('CORS_ORIGIN', { infer: true }) });
 }
