@@ -20,12 +20,11 @@ lead-forge/
 ├─ client/                   Next.js application
 ├─ server/                   NestJS application
 ├─ docs/
-│  └─ PLAN.md                Approved technical plan
+│  ├─ PLAN.md                Approved technical plan
+│  └─ learning/              Apollo integration study notes
 ├─ DEVELOPMENT_PROGRESS.md   Progress, decisions and next steps
 └─ README.md
 ```
-
-`client/` and `server/` are added during Phase 1.
 
 ## Getting started
 
@@ -57,6 +56,30 @@ npm run start:dev      # http://localhost:4000/api
 Check that it runs: `curl http://localhost:4000/api/health`. It returns `200` when the database is reachable and `503` when it isn't.
 
 The server validates its environment variables at startup and refuses to start if one is missing or invalid.
+
+#### Apollo
+
+Set `APOLLO_API_KEY` in `server/.env`. The key stays on the server; the browser never sees it. `APOLLO_TIMEOUT_MS` (default `10000`) is optional.
+
+Apollo's Free plan doesn't include People Search, so a fake Apollo server stands in for it. It serves people search in Apollo's documented format and passes every other request through to the live API:
+
+```bash
+npm run apollo:fake    # http://127.0.0.1:4010, in a second terminal
+```
+
+with `APOLLO_BASE_URL=http://127.0.0.1:4010/api/v1` in `server/.env`. Without it, the server calls `https://api.apollo.io/api/v1` directly.
+
+```bash
+# People search (0 credits). Filters repeat: titles=CTO&titles=VP
+curl "http://localhost:4000/api/apollo/people?titles=CTO&seniorities=c_suite&companySizes=51-200&page=2&perPage=10"
+
+# Company lookup by domain (live API, 1 credit for each company found)
+curl "http://localhost:4000/api/apollo/organizations/enrich?domain=apollo.io"
+```
+
+Put `test:empty`, `test:rate-limit`, `test:platform-limit`, `test:access-denied`, `test:invalid`, `test:unavailable` or `test:timeout` in `keywords` to make the fake Apollo fail in that way. Company lookups accept URLs and emails (`https://www.Apollo.io/pricing` becomes `apollo.io`). Invalid input is rejected before Apollo is called.
+
+Errors use one shape everywhere: `{ statusCode, code, message, retryAfterSeconds?, requestId? }`. `requestId` is Apollo's id for the failed call. How the integration works, and why: [docs/learning/apollo-notebook.md](docs/learning/apollo-notebook.md).
 
 | Command | Purpose |
 |---|---|
@@ -107,3 +130,4 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 - [Technical plan](docs/PLAN.md)
 - [Development progress](DEVELOPMENT_PROGRESS.md)
+- [Apollo integration notebook](docs/learning/apollo-notebook.md)

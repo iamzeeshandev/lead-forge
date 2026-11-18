@@ -1,9 +1,20 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { ApiException } from '../../common/errors/api-exception.js';
+import {
+  buildPaginationMeta,
+  type Paginated,
+} from '../../common/pagination.js';
 import type { CompanyProfile } from '../../common/types/company-profile.js';
+import type { ProspectPerson } from '../../common/types/prospect-person.js';
 import { ApolloClient } from './apollo.client.js';
 import { toApiException, toApolloApiError } from './apollo.errors.js';
-import { mapApolloOrganization } from './apollo.mapper.js';
+import {
+  APOLLO_MAX_PAGES,
+  mapApolloOrganization,
+  mapApolloPerson,
+  toApolloPeopleSearchParams,
+} from './apollo.mapper.js';
+import type { SearchPeopleQuery } from './dto/search-people.query.js';
 
 /**
  * The Apollo module's boundary: callers get LeadForge types and ApiExceptions,
@@ -26,6 +37,23 @@ export class ApolloService {
       });
     }
     return mapApolloOrganization(response.organization);
+  }
+
+  async searchPeople(
+    query: SearchPeopleQuery,
+  ): Promise<Paginated<ProspectPerson>> {
+    const response = await this.call(() =>
+      this.client.searchPeople(toApolloPeopleSearchParams(query)),
+    );
+    return {
+      items: (response.people ?? []).map(mapApolloPerson),
+      meta: buildPaginationMeta(
+        response.total_entries ?? 0,
+        query.page,
+        query.perPage,
+        APOLLO_MAX_PAGES,
+      ),
+    };
   }
 
   private async call<T>(request: () => Promise<T>): Promise<T> {
