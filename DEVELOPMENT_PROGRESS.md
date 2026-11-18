@@ -1,10 +1,10 @@
 # LeadForge — Development Progress
 
-_Last updated: 2026-11-10_
+_Last updated: 2026-11-11_
 
 ## Current phase
 
-**Phase 2 complete.** Next: release v0.1.0 (`dev` → `main`), then **Phase 3 — Apollo integration fundamentals**
+**Phase 3 complete** (Apollo client, live company enrichment, people search through the fake Apollo server). Next: **Phase 4 — the client calls the real server API** instead of its mocks.
 
 ## Phases
 
@@ -21,7 +21,18 @@ _Last updated: 2026-11-10_
   - [x] 2.3 People search: API contract (`ProspectPerson`, `PeopleSearchParams`, `Paginated<T>`, error codes), filters in the URL, mock API with error triggers, TanStack Query, empty/loading/error/past-last-page states, prospect side panel
   - [x] 2.4 Saved leads (search as you type, status filter, pagination) and lead details (status, notes, delete with confirmation) on a mock leads API; saving from People search imports with duplicate skipping
   - [x] 2.5 Dashboard (key figures, status and enrichment breakdowns, top companies, recent saves) and Companies (lookup by domain, companies behind saved leads)
-- [ ] **Phase 3 — Apollo integration fundamentals**
+  - Released to `main` through PR #9; tag `v0.1.0` still to be pushed
+- [x] **Phase 3 — Apollo integration fundamentals** (study guide: [docs/learning/apollo-notebook.md](docs/learning/apollo-notebook.md))
+  - [x] 3.1 Apollo client and live company enrichment:
+    - Docs worksheet, plus raw calls against the live API: 3 credits spent, and every difference between the docs and reality recorded.
+    - `ApolloModule` (HTTP client, typed errors, rate-limit logging, mapper) and `GET /api/apollo/organizations/enrich?domain=`.
+    - One error envelope for the whole API.
+    - Unit tests, plus an e2e test against a local fake Apollo; break-it runs for a wrong key, timeout, unreachable host and blank key.
+  - [x] 3.2 People search through a fake Apollo server (3.2 and 3.3 merged to save time):
+    - `server/tools/fake-apollo.ts` fakes People Search: documented shapes, fixed-window rate limits and error triggers. Everything else passes through to the live API.
+    - `GET /api/apollo/people`: our filters mapped to Apollo's array parameters, page counts with the 500-page cap, and people mapped with masked names and phone flags.
+    - Verified by running the fake Apollo and the server together. No new spec files.
+    - Fake company search and person enrichment are added in the phases that use them (6 and 7).
 - [ ] **Phase 4 — Client ↔ server (live people search)**
 - [ ] **Phase 5 — Database & lead management**
 - [ ] **Phase 6 — Company search**
@@ -117,6 +128,31 @@ _Last updated: 2026-11-10_
 | Lead updates also invalidate the dashboard summary | Found in the browser: a status change didn't reach the dashboard because only lists were invalidated |
 | "Email available" (search flag) shown separately from "revealed" (known address) | Before enrichment, availability is all the free search gives |
 | Error mapping moved to `lib/describe-api-error.ts` with provider-neutral wording | People search and company lookup show the same Apollo errors |
+| **Learning method changed** (2026-11-11): Claude builds every step and explains it; the notebook is a study guide with model answers | The user asked to learn from explanations instead of doing the exercises |
+| `@nestjs/axios` 12.0.1 with `axios` pinned to exactly `1.21.0` | `1.21.1` was 2 days old; axios had a malicious release in 2026. `1.21.0` has the usual dependencies and a signed build attestation |
+| Apollo errors classified by `error_details.code` first, HTTP status second | Found live: a missing key returns **422** `AUTH.AUTHENTICATION.API_KEY_REQUIRED`, not 401 |
+| Apollo key or plan problems → our **502** `PROVIDER_ACCESS_DENIED` | The broken credential is the server's; a 401 would mean the user isn't logged in |
+| Enrichment `200 {}` → our 404 `NOT_FOUND` | Found live: Apollo answers an unknown domain with an empty object, not a 404 |
+| Rate limits passed on as 429 with `retryAfterSeconds` and a `Retry-After` header | The client must wait; `PLATFORM_RATE_LIMIT` has no header, so the delay falls back to `suggestions[].retry_after_seconds` |
+| `ApolloApiError` has no `cause` | The original AxiosError's config holds the `x-api-key` header; a unit test checks the key can't leak |
+| `maxRedirects: 0` on the Apollo HTTP client | On cross-host redirects axios keeps custom headers such as `x-api-key`; it drops only Authorization, Proxy-Authorization and Cookie |
+| `HttpModule` registered inside `ApolloModule` only | No other module's HTTP client carries the key |
+| Raw Apollo types list only the fields we read, all optional except `id` | The real response lacked documented fields (`account`, `blog_url`) and had undocumented ones (`organization_revenue`) |
+| Technologies deduped case-insensitively; revenue taken from the number, not `"150M"` | The real response repeats 4 of 195 technology names |
+| Domain normalised on the server as well (copy of the client's function) | The server can't trust the client; one domain must cost one credit |
+| Global `ApiExceptionFilter`: every error becomes `{ statusCode, code, message, retryAfterSeconds?, requestId? }` | The client parses one shape. Unexpected errors log their stack but answer with a generic message |
+| Health check sets 503 instead of throwing | Its body is a status report, so it must not be rewritten into the error envelope |
+| Apollo log lines: method, path, status/kind, error code, duration, requests left, request id, Apollo's message or socket error; separated by `\|` | Query strings can hold names and emails, headers hold the key. `·` was garbled in Windows log files |
+| `APOLLO_API_KEY` required at startup; `APOLLO_BASE_URL` and `APOLLO_TIMEOUT_MS` (10 s) optional | Fail fast. axios waits forever by default |
+| E2E tests run against a local fake Apollo (`node:http`, random port) through `APOLLO_BASE_URL`, not a mocked `HttpService` | Exercises real axios: headers, query encoding, timeouts, error parsing. No credits spent |
+| **Scope reset** (2026-11-11): portfolio project to learn and show the Apollo integration. No new spec files; verify by running the app; stay on the plan's agenda | The user's goal is to explain the integration confidently in interviews, not to ship a SaaS |
+| Fake Apollo is one hand-written Node file (`node:http`, no dependencies) rather than WireMock or Prism | Search needs computed responses (paging, totals, rate-limit counters). WireMock needs Java or Docker; Prism would only know the spec, not the quirks we found live |
+| Fake Apollo passes unknown paths through to `api.apollo.io` | One `APOLLO_BASE_URL` serves faked search and live enrichment |
+| `.env.example` points `APOLLO_BASE_URL` at the fake (`127.0.0.1:4010`) | The working setup on the Free plan; the schema default stays the live API |
+| Our API exposes Apollo's POST search as `GET /api/apollo/people` with repeated keys | It's a read; the query string matches the client's URL |
+| Company sizes mapped to Apollo's `min,max`; `5001+` → `5001,1000000` | Apollo wants both ends of the range |
+| `include_similar_titles` sent only when false; empty filters left out | Apollo's defaults apply; shorter requests and logs |
+| `has_direct_phone` matched by prefix (`Yes` / `Maybe…`) | It's a string with advice text that Apollo may reword |
 
 ## Git
 
@@ -124,7 +160,7 @@ _Last updated: 2026-11-10_
 
 | Branch | Purpose | Status |
 |---|---|---|
-| `main` | Stable releases | Pushed. `origin/main` is 1 commit behind local `main` |
+| `main` | Stable releases | v0.1.0 merged (PR #9, `6a795d7`); tag `v0.1.0` not pushed yet |
 | `dev` | Integration | Pushed |
 | `feature/server-setup` | Task 1.1 | Merged into `dev` (PR #1, `a0ad838`) |
 | `feature/client-setup` | Task 1.2 | Merged into `dev` (PR #2, `cce48ac`) |
@@ -133,7 +169,9 @@ _Last updated: 2026-11-10_
 | `feature/client-data-table` | Task 2.2 | Merged into `dev` (PR #5, `46d401d`) |
 | `feature/client-people-search` | Task 2.3 | Merged into `dev` (PR #6, `97666e9`); its docs ride along with task 2.4 |
 | `feature/client-saved-leads` | Task 2.4 | Merged into `dev` (PR #7, `4f3bddb`) |
-| `feature/client-dashboard-companies` | Task 2.5 | Ready to commit and open a PR into `dev` |
+| `feature/client-dashboard-companies` | Task 2.5 | Merged into `dev` (PR #8, `037b9c9`) |
+| `feature/apollo-client` | Task 3.1 (code) | Merged into `dev` (PR #10, `0fe0e83`) |
+| `feature/apollo-people-search` | Task 3.2, plus the task 3.1 docs | Ready to commit and open a PR into `dev` |
 
 ### Commits and PRs
 
@@ -158,27 +196,33 @@ _Last updated: 2026-11-10_
 | 2026-11-10 | `dev` | `97666e9` Merge PR #6 (people search) |
 | 2026-11-10 | `feature/client-saved-leads` | `8d7db9e` feat(client): add saved leads and lead details (code and docs in one commit) |
 | 2026-11-10 | `dev` | `4f3bddb` Merge PR #7 (saved leads) |
-| 2026-11-10 | `feature/client-dashboard-companies` | `feat(client): add dashboard and company lookup` |
-| 2026-11-10 | `feature/client-dashboard-companies` | `docs: complete phase 2 progress` |
+| 2026-11-10 | `feature/client-dashboard-companies` | `c3987e3` feat(client): add dashboard and company lookup (code and docs in one commit) |
+| 2026-11-10 | `dev` | `037b9c9` Merge PR #8 (dashboard and companies) |
+| 2026-11-11 | `main` | `6a795d7` Merge PR #9 (release v0.1.0) |
+| 2026-11-11 | `feature/apollo-client` | `ea72e06` feat(apollo): add apollo client and company enrichment |
+| 2026-11-11 | `dev` | `0fe0e83` Merge PR #10 (Apollo client) |
+| 2026-11-11 | `feature/apollo-people-search` | `feat(apollo): add people search with a fake apollo server` |
+| 2026-11-11 | `feature/apollo-people-search` | `docs: add apollo notebook and phase 3 progress` |
 
 ## Known issues and risks
 
-- **Apollo Free plan limits** (confirmed in task 1.4). No API access to people search, company search or person enrichment; those run on the fake server. Company enrichment works: 1 credit each, 74 of 75 credits left, 50 requests/min · 200/hour · 600/day.
+- **Apollo Free plan limits** (confirmed in task 1.4). There's no API access to people search, company search or person enrichment; those run on the fake server. Company enrichment works: 1 credit each, 50 requests/min · 200/hour · 600/day.
+- **Apollo credits:** 74 left after task 1.4. Task 3.1 made 3 lookups (an unknown domain, `apollo.io`, `stripe.com`), so 71 or 72 are left. Which one shows in Apollo tells us whether a no-match (`200 {}`) costs a credit; the docs don't say.
+- **`GET /api/apollo/organizations/enrich` spends a credit on every call that finds a company.** There's no cache or database check yet; Phase 6 adds "never enrich the same domain twice". The client doesn't call it until Phase 4.
 - **Docker Desktop** must be running for PostgreSQL and the e2e tests.
 
 - Requests outside `/api` get Express's default HTML 404 (Nest's JSON 404 handler only covers the `/api` prefix). Acceptable: no routes live outside `/api`.
 - **Client dev-tool audit findings.** `minimatch` (DoS, via ESLint plugins and shadcn's `ts-morph`) and `deepmerge` (prototype pollution, via the shadcn CLI). Dev-only; `npm audit --omit=dev` reports 0. Don't run `npm audit fix --force`: it downgrades shadcn to v1. Recheck when ESLint/shadcn update.
 - **ESLint 9** is in maintenance (10 is latest). Next 16.4's scaffold pins `^9`; upgrade once `eslint-config-next` supports 10.
-- `origin/main` is still 1 commit behind local `main` (`git push origin main`).
 
 - **shadcn CLI writes Mira defaults** (28px inputs, dark-mode classes). Every `shadcn add` needs restyling to Ledger tokens.
 - **Mock leads live in this browser only** (`localStorage` key `leadforge:mock-leads`). Phase 5 moves them to Postgres; clear the key to start fresh.
 - **Stand-alone `tsc` can report stale route types** after adding a route. Run `npx next typegen` (or `npm run build`, which regenerates them).
-- **Usage meter shows "—"** until Phase 4 passes Apollo's rate-limit headers to the client. The mockup's "credits left" figure is left out until we confirm an endpoint the scoped key can read it from.
+- **Usage meter shows "—"** until Phase 4 passes Apollo's rate-limit headers to the client. There's no "credits left" figure: the scoped key gets a 403 from `usage_stats` (checked in task 3.1), and that endpoint doesn't report credits anyway.
 - **Prisma 8** is in release candidate, and the default Prisma docs already describe it. Use the v7 docs (`prisma.io/docs/orm/v7`, `/guides/v7`) until we decide to upgrade.
 
 ## Next step
 
-1. Commit `feature/client-dashboard-companies`, push it, open a PR into `dev` and merge.
-2. Release v0.1.0: PR `dev` → `main` (merge commit), then tag `v0.1.0` on `main`.
-3. Phase 3 (🧑🤝): Apollo integration fundamentals. First the doc-reading worksheet and raw calls (lab steps 3.A–3.B in [docs/PLAN.md](docs/PLAN.md)), and choosing the fake Apollo tool.
+1. Commit `feature/apollo-people-search` (code, then docs), push it, open a PR into `dev` and merge.
+2. Tag `v0.1.0` on `main` and push the tag.
+3. Phase 4: replace the client's people search and company lookup mocks with calls to the server API, and show Apollo's requests-left in the usage meter.

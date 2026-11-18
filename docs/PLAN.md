@@ -3,6 +3,8 @@
 > Approved on 2026-11-10 (Phase 0). Changes after approval are recorded in [DEVELOPMENT_PROGRESS.md](../DEVELOPMENT_PROGRESS.md).
 >
 > **Amendment (2026-11-10, after task 1.4):** the Free Apollo plan doesn't include People Search, so the integration is **hybrid**: live company enrichment plus a fake Apollo server for search. See [§7](#7-apollo-access-hybrid-integration-decided-after-task-14). It supersedes the Apollo parts of §2 "Impact on the product" and §10 for Phases 3, 6 and 7.
+>
+> **Amendment (2026-11-11, start of Phase 3):** the learning method in §1 changed at the user's request. Claude builds every step, including the 🧑 exercises, and explains each one in [docs/learning/apollo-notebook.md](learning/apollo-notebook.md), together with model answers to the interview questions. There are no explain-back gates.
 
 ## Context
 

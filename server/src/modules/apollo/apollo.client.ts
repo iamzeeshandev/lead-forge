@@ -5,6 +5,10 @@ import { firstValueFrom } from 'rxjs';
 import { toApolloApiError } from './apollo.errors.js';
 import { readRateLimit, readRequestId } from './apollo.headers.js';
 import type { ApolloOrganizationEnrichResponse } from './interfaces/apollo-organization.js';
+import type {
+  ApolloPeopleSearchParams,
+  ApolloPeopleSearchResponse,
+} from './interfaces/apollo-person.js';
 
 /**
  * The only class that talks HTTP to Apollo. It returns Apollo's raw shapes and
@@ -24,6 +28,17 @@ export class ApolloClient {
       method: 'GET',
       url: '/organizations/enrich',
       params: { domain },
+    });
+  }
+
+  /** 0 credits. A POST whose parameters go in the query string, as Apollo documents it. */
+  searchPeople(
+    params: ApolloPeopleSearchParams,
+  ): Promise<ApolloPeopleSearchResponse> {
+    return this.request({
+      method: 'POST',
+      url: '/mixed_people/api_search',
+      params,
     });
   }
 
